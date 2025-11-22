@@ -1,0 +1,52 @@
+## Database Schema
+
+-- profiles
+create table profiles (
+  id uuid primary key references auth.users on delete cascade,
+  full_name text,
+  display_name text,
+  role text default 'submitter' check (role in ('submitter', 'in_review', 'approved', 'changes_requested')),
+  avatar_url text,
+  created_at timestamptz default now()
+);
+
+-- projects
+create table projects (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  description text,
+  owner uuid references profiles(id) on delete set null,
+  created_at timestamptz default now()
+);
+
+-- project members
+create table project_members (
+  project_id uuid references projects(id) on delete cascade,
+  member_id uuid references profiles(id) on delete cascade,
+  role text default 'reviewer' check (role in ('reviewer', 'submitter')),
+  added_at timestamptz default now(),
+  primary key (project_id, member_id)
+);
+
+-- submissions
+create table submissions (
+id uuid primary key default gen_random_uuid(),
+project_id uuid references projects(id) on delete cascade,
+title text not null,
+filename text,
+content text,
+submitter_id uuid references profiles(id) on delete set null,
+status text default 'pending' check (status in ('pending','approved','changes_requested')),
+created_at timestamptz default now(),
+updated_at timestamptz default now()
+);
+
+-- comments
+create table comments (
+  id uuid primary key default gen_random_uuid(),
+  submission_id uuid references submissions(id) on delete cascade,
+  author_id uuid references profiles(id) on delete set null,
+  body text not null, _crypto_aead_det_decryptline_number int,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
